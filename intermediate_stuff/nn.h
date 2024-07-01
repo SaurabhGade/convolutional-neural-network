@@ -36,7 +36,7 @@ typedef struct{
 // */
 
 float rand_float(void);
-
+void mat_fill(Mat m, float x);
 void mat_rand(Mat m, float low , float high);
 Mat mat_alloc(size_t rows, size_t cols);
 void mat_dot(Mat dst, Mat a, Mat b);
@@ -70,6 +70,15 @@ Mat mat_alloc(size_t rows, size_t cols){
 float rand_float(void){
   return (float)rand()/RAND_MAX;    //generates random number between [0,1]
 }
+
+void mat_fill(Mat m, float x){
+  for(size_t i = 0 ; i < m.rows ; i++){
+    for(size_t j = 0 ; j < m.cols ; j++){
+      MAT_AT(m,i,j) = x; 
+    } 
+  } 
+}
+
 
 void mat_rand(Mat m , float low , float high){   //to allocate matrix with some random stuff.
   for(size_t i = 0 ; i < m.rows ; i++){
@@ -121,8 +130,6 @@ void mat_print(Mat m){
     NN_PRINTF("\n");
   }
 }
-
-
 
 
 #endif //NN_IMPLEMENTATION
