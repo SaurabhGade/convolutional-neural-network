@@ -1,7 +1,9 @@
 #ifndef NN_H_
 #define NN_H_
 
+#ifndef NN_STDDEF
 #include <stddef.h>
+#endif //NN_STDDEF
 /*IN SOME INVIRNOMENT THERE WILL BE NO AVAILIBILITY SO WE CAN PROVIDE .
  **/ 
 #ifndef NN_MALLOC     //only if NN_MALLOC IS NOT DEFINED.
@@ -12,27 +14,26 @@
 #ifndef NN_ASSERT
 #include<assert.h>
 #define NN_ASSERT assert
-#endif
+#endif  //NN_ASSERT
 
 #ifndef NN_PRINTF
 #include<stdio.h>
 #define NN_PRINTF printf
-#endif
-
+#endif  //NN_PRINTF
+//
 #ifndef NN_MATH
 #include<math.h>
-#endif
-
-//#endif  //NN_H_
+#endif  //NN_MATH
 
 //this is header part ... all declerations will be here
 typedef struct{
   size_t rows;
   size_t cols;
+  size_t strid;
   float *es;
 } Mat;
 
-#define MAT_AT(m, i, j) (m).es[(i)*(m).cols + (j)]    //this micor will help to get element at i,jth index. 
+#define MAT_AT(m, i, j) (m).es[(i)*(m).strid + (j)]    //this micor will help to get element at i,jth index. 
 /* // Put all this (m).es[(i)*(m).cols + (j)] in parenthesis because.
 // and of the variable can be expression.
 //  for ex when calling macro i write MAT_AT(m, i+1 , j);
@@ -46,6 +47,8 @@ float sigmoidf(float x);
 void mat_fill(Mat m, float x);
 void mat_rand(Mat m, float low , float high);
 Mat mat_alloc(size_t rows, size_t cols);
+Mat mat_row(Mat m , size_t row);
+void mat_copy(Mat dst, Mat src);
 void mat_dot(Mat dst, Mat a, Mat b);
 void mat_sum(Mat dst , Mat a);
 void mat_print(Mat m, const char *name);
@@ -73,6 +76,7 @@ Mat mat_alloc(size_t rows, size_t cols){
   Mat m;
   m.rows = rows;
   m.cols = cols;
+  m.strid = cols;
  /* //now we have to allocate memory for es , I'm trying to make it generealised as possible 
   //to achieve that I'm dereferecing es and then calculating the it's size by the help of sizeof function, 
   //so in feture I change datatype fo es it will autometically adopt to it. */
@@ -81,10 +85,6 @@ Mat mat_alloc(size_t rows, size_t cols){
   return m; 
 }
 
-/*
-  // 
- 
- * */
 float rand_float(void){
   return (float)rand()/RAND_MAX;    //generates random number between [0,1]
 }
@@ -106,9 +106,30 @@ void mat_rand(Mat m , float low , float high){   //to allocate matrix with some 
   for(size_t i = 0 ; i < m.rows ; i++){
     for(size_t j = 0 ; j < m.cols ; j++){
       MAT_AT(m,i,j) = rand_float() *(high-low)+low;   //to get number in given rang between high and low.
-      ////only work when number are between 0-1.
+      ////only work when rand_float() = [0,1],  number are between 0-1.
     } 
   } 
+}
+
+Mat mat_row(Mat m , size_t row){   //return return the specific row from given matrix. 
+  // besically returns the matrix which contain  
+//  NN_ASSERT(m.rows <= row);
+  return (Mat){
+    .rows = 1,
+    .cols = m.cols,
+    .strid = m.strid,
+    .es = &MAT_AT(m,row,0)
+  };
+}
+
+void mat_copy(Mat dst, Mat src){
+  NN_ASSERT(dst.rows == src.rows);
+  NN_ASSERT(dst.cols == src.cols);
+  for(size_t i = 0 ; i < src.rows ; i++){
+    for(size_t j = 0 ; j < src.cols ; j++){
+      MAT_AT(dst, i, j) = MAT_AT(src, i, j);
+    }
+  }
 }
 
 
@@ -154,7 +175,7 @@ void mat_print(Mat m, const char *name){
   NN_PRINTF("%s = [\n", name);
   for(size_t i = 0 ; i < m.rows ; i++){
     for(size_t j = 0 ; j < m.cols ; j++){
-      NN_PRINTF("     %f ",MAT_AT(m,i,j));   
+      NN_PRINTF("   %f ",MAT_AT(m,i,j));   
       //because actuall data stored as array but we interrpreting it as matrix.
       //for this I've written a micros MAT_AT 
       /*
@@ -165,7 +186,7 @@ void mat_print(Mat m, const char *name){
     }
     NN_PRINTF("\n");
   }
-  NN_PRINTF("     ]\n");
+  NN_PRINTF("]\n");
 }
 
 
