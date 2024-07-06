@@ -177,6 +177,7 @@ size_t converge(float x){
 int main(void){
   srand(time(NULL));
 
+
   size_t strid = 3;
   size_t n = sizeof(td)/sizeof(td[0])/strid; //because we have to find out total number of rows in one dimentional array.
 
@@ -192,6 +193,19 @@ int main(void){
       .strid = strid,
       .es = td+2 
   };
+
+  size_t arch[] = {2,2,1};
+  NN nn;
+  nn = nn_alloc(arch , ARRAY_LEN(arch));  
+  nn_rand(nn,0,1);
+
+  Mat input = mat_row(train_input, 1);
+  MAT_PRINT(input);
+  mat_copy(NN_INPUT(nn), input);
+  nn_forward(nn);
+  MAT_PRINT(NN_OUTPUT(nn));
+ 
+ return 0;
 
   Xor m = xor_alloc();
   Xor g = xor_alloc();

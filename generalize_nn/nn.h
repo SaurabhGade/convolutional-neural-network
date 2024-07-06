@@ -25,6 +25,9 @@
 #include<math.h>
 #endif  //NN_MATH
 
+
+#define ARRAY_LEN(xs) sizeof((xs))/sizeof((xs)[0])
+
 //this is header part ... all declerations will be here
 typedef struct{
   size_t rows;
@@ -51,14 +54,38 @@ Mat mat_row(Mat m , size_t row);
 void mat_copy(Mat dst, Mat src);
 void mat_dot(Mat dst, Mat a, Mat b);
 void mat_sum(Mat dst , Mat a);
-void mat_print(Mat m, const char *name);
+void mat_print(Mat m, const char *name, size_t padding);
 void mat_sig(Mat m);
 
-#define MAT_PRINT(m) mat_print(m, #m)    //this very cool feature of c priprocessing.
+#define MAT_PRINT(m) mat_print(m, #m, 0)    //this very cool feature of c priprocessing.
   //                                  //Where we can litterly convert input token into string. :))  
   //  MAT_PRINT MACRO TAKES A TOKEN AND PROVIDE IT TO mat_print function and convert same token in string and pass as second arguement.
 
 
+
+
+
+
+
+//Neural network related stuff.
+typedef struct {
+  size_t count;     //number of layers in neural network.
+  Mat *ws;          //array of waight matrices.
+  Mat *bs;          //array of bias matrices.
+  Mat *as;          //intermidate matrices. this array also contain the initial input so 
+  //// so amount of activations will count+1 because it also contain the initial input.
+} NN;
+
+#define NN_PRINT(nn) nn_print(nn, #nn);
+#define NN_INPUT(nn) (nn).as[0]
+#define NN_OUTPUT(nn) (nn).as[(nn).count]
+
+NN nn_alloc(size_t *arch, size_t arch_count);
+void nn_print(NN nn, const char *name);
+void nn_rand(NN nn, float lower_bound , float upper_bound);
+void nn_forward(NN nn);
+void nn_f_diff(NN m, NN g, float eps , Mat in, Mat out);
+float nn_cost(NN m, Mat in, Mat out); 
 #endif //NN_H
 
 #ifdef NN_IMPLEMENTATION
@@ -171,11 +198,12 @@ void mat_sum(Mat dst , Mat a){
 }
 
 
-void mat_print(Mat m, const char *name){
-  NN_PRINTF("%s = [\n", name);
+void mat_print(Mat m, const char *name, size_t padding){
+  NN_PRINTF("%*s%s = [\n",(int)padding, "", name);
   for(size_t i = 0 ; i < m.rows ; i++){
+    NN_PRINTF("%*s",(int)padding, ""); 
     for(size_t j = 0 ; j < m.cols ; j++){
-      NN_PRINTF("   %f ",MAT_AT(m,i,j));   
+      NN_PRINTF("%f ", MAT_AT(m,i,j));   
       //because actuall data stored as array but we interrpreting it as matrix.
       //for this I've written a micros MAT_AT 
       /*
@@ -186,8 +214,86 @@ void mat_print(Mat m, const char *name){
     }
     NN_PRINTF("\n");
   }
-  NN_PRINTF("]\n");
+  NN_PRINTF("%*s]\n", (int)padding, "");
 }
 
+
+
+//Neural network related stuff.
+NN nn_alloc(size_t *arch, size_t arch_count) {
+
+  NN_ASSERT(arch_count > 0);  //arch_count must be greater than 0.
+
+  NN nn;
+  nn.count = arch_count - 1;     //because arch count also include input layer.
+  //we only want count of intermidate layers. 
+  nn.ws = NN_MALLOC(sizeof(*nn.ws) * nn.count);   // nn.count matrices allcated dinamically. 
+  NN_ASSERT(nn.ws != NULL);
+
+  nn.bs = NN_MALLOC (sizeof(*nn.bs) * nn.count);  // nn.count matrices allcated dinamically  
+  NN_ASSERT(nn.bs != NULL);
+ 
+  nn.as = NN_MALLOC(sizeof(*nn.as) * nn.count + 1);  // nn.as contain intermidate result but it also contain input so arch_count. 
+  NN_ASSERT(nn.as != NULL);
+  
+  nn.as[0] = mat_alloc(1, arch[0]);   //nn.as[0] it's input vector, 
+  //i.e number of row = 1 and number are arch[0].
+
+  for(size_t i = 1 ; i < arch_count ; i++){
+    nn.ws[i-1] = mat_alloc(nn.as[i-1].cols, arch[i]);
+    nn.bs[i-1] = mat_alloc(1, arch[i]);
+    nn.as[i] = mat_alloc(1, arch[i]);
+  }
+  return nn;
+}
+
+void nn_print(NN nn, const char *name){
+  printf("%s = [\n",name);
+  char buff[256];
+  for(size_t i = 0 ; i < nn.count ; i++){
+    snprintf(buff , sizeof(buff) , "ws%zu",i);
+    mat_print(nn.ws[i], buff , 5);
+    snprintf(buff , sizeof(buff) , "bs%zu",i);
+    mat_print(nn.bs[i], buff , 5);
+  } 
+  printf("]\n");
+}
+
+void nn_rand(NN nn, float lower_bound , float upper_bound){
+  NN_ASSERT(lower_bound <= upper_bound);
+  for(size_t i = 0 ; i < nn.count ; i++){
+      mat_rand(nn.ws[i], lower_bound, upper_bound);
+      mat_rand(nn.bs[i], lower_bound, upper_bound);
+  } 
+}
+
+void nn_forward(NN nn){
+  for(size_t i = 0 ; i < nn.count ; i++){
+    mat_dot(nn.as[i+1], nn.as[i], nn.ws[i]);
+    mat_sum(nn.as[i+1], nn.bs[i]);
+    mat_sig(nn.as[i+1]);
+  }
+}
+float nn_cost(NN m, Mat ti, Mat to){
+  NN_ASSERT(ti.rows == to.rows);
+  NN_ASSERT(to.cols == NN_OUTPUT(m).cols);
+
+  float c = 0;
+  for(size_t i = 0 ; i < n ; i++){
+    Mat x = mat_row(ti, i);   //input. 
+    Mat y = mat_row(to, i);   //output.
+    
+    mat_copy(NN_INPUT(nn), x);
+    nn_forward(nn);
+    NN_OUTPUT(nn);
+  }
+} 
+void nn_f_diff(NN m, NN g, float eps , Mat in, Mat out){
+  (void) nn;
+  (void)g;
+  (void)eps;
+  (void)ti;
+  (void)to;
+}
 
 #endif //NN_IMPLEMENTATION
