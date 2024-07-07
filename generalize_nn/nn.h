@@ -19,6 +19,7 @@
 #ifndef NN_PRINTF
 #include<stdio.h>
 #define NN_PRINTF printf
+#define NN_SNPRINTF snprintf
 #endif  //NN_PRINTF
 //
 #ifndef NN_MATH
@@ -249,15 +250,15 @@ NN nn_alloc(size_t *arch, size_t arch_count) {
 }
 
 void nn_print(NN nn, const char *name){
-  printf("%s = [\n",name);
+  NN_PRINTF("%s = [\n",name);
   char buff[256];
   for(size_t i = 0 ; i < nn.count ; i++){
-    snprintf(buff , sizeof(buff) , "ws%zu",i);
+    NN_SNPRINTF(buff , sizeof(buff) , "ws%zu",i);
     mat_print(nn.ws[i], buff , 5);
-    snprintf(buff , sizeof(buff) , "bs%zu",i);
+    NN_SNPRINTF(buff , sizeof(buff) , "bs%zu",i);
     mat_print(nn.bs[i], buff , 5);
   } 
-  printf("]\n");
+  NN_PRINTF("]\n");
 }
 
 void nn_rand(NN nn, float lower_bound , float upper_bound){
