@@ -204,7 +204,7 @@ int main(void){
   float rate = 1e-1;
 
   for(size_t i = 0 ; i < 1000*100 ; i++){ 
-   // printf("%f\n",cost(m,train_input, train_output));
+    printf("%f\n",cost(m,train_input, train_output));
     finite_diff(m, g, eps, train_input, train_output);
     xor_learn(m, g, rate);
   }
